@@ -1,0 +1,62 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Python virtual environments
+venv/
+*/venv/
+
+# Node modules (if using Node.js in frontend)
+frontend/node_modules/
+
+# Environment variables and secrets
+.env
+*.env
+
+# macOS system files
+.DS_Store
+
+# Python egg info
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook checkpoints (if any)
+.ipynb_checkpoints/
+
+# Compiled JavaScript (if using TypeScript)
+*.js
+*.js.map
+
+# Firebase local emulators and cache (if using Firebase)
+frontend/.firebase/
+firebase-debug.log
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# ReportLab or other generated PDFs
+*.pdf
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# VSCode settings (if you use VSCode)
+.vscode/
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+.nox/
+.cache/
+coverage.xml
+
+# Dataconnect generated files (if they are build artifacts)
+frontend/dataconnect-generated/
