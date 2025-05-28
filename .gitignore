@@ -60,3 +60,4 @@ coverage.xml
 
 # Dataconnect generated files (if they are build artifacts)
 frontend/dataconnect-generated/
+bookmaker-service-account.json
