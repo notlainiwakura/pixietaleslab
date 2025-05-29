@@ -53,9 +53,11 @@ const BookFormWizard: React.FC = () => {
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [loading, setLoading] = useState(false);
-  const [storyResult, setStoryResult] = useState<any>(null); // story, audio, session_id
-  const [bookResult, setBookResult] = useState<any>(null); // book, illustrations, scenes
+  const [storyResult, setStoryResult] = useState<any>(null);
+  const [bookResult, setBookResult] = useState<any>(null);
   const [progressStep, setProgressStep] = useState(0);
+  const [polling, setPolling] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -72,6 +74,37 @@ const BookFormWizard: React.FC = () => {
       if (interval) clearInterval(interval);
     };
   }, [loading, bookResult]);
+
+  // Polling effect for book status
+  useEffect(() => {
+    let pollInterval: NodeJS.Timeout | null = null;
+    if (polling && sessionId) {
+      const poll = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/book-status?session_id=${sessionId}`);
+          const data = await res.json();
+          if (data.status === 'done') {
+            setBookResult(data);
+            setPolling(false);
+            setLoading(false);
+          } else if (data.status === 'error') {
+            setBookResult({ error: data.error || 'Unknown error' });
+            setPolling(false);
+            setLoading(false);
+          } // else still pending
+        } catch (err: any) {
+          setBookResult({ error: err.message || 'Unknown error' });
+          setPolling(false);
+          setLoading(false);
+        }
+      };
+      poll();
+      pollInterval = setInterval(poll, 5000);
+    }
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [polling, sessionId]);
 
   // Step navigation
   const next = () => setStep((s) => (s < steps.length - 1 ? ((s + 1) as Step) : s));
@@ -129,8 +162,10 @@ const BookFormWizard: React.FC = () => {
     setLoading(true);
     setStoryResult(null);
     setBookResult(null);
+    setSessionId(null);
+    setPolling(false);
     try {
-      // Step 1: Generate story and audio
+      // Step 1: Generate story
       const payload: any = { randomize_all: form.randomizeAll };
       if (!form.randomizeAll) {
         if (form.characterName) payload.character_name = form.characterName;
@@ -146,25 +181,25 @@ const BookFormWizard: React.FC = () => {
       });
       const storyData = await storyRes.json();
       setStoryResult(storyData);
-      // Step 2: Generate book (illustrations, PDF) in background
+      // Step 2: Start book generation (async)
       const bookRes = await fetch(`${API_BASE}/api/generate-book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: storyData.session_id }),
       });
       const bookData = await bookRes.json();
-      setBookResult(bookData);
+      setSessionId(storyData.session_id);
+      setPolling(true);
+      // bookResult will be set by polling effect
     } catch (err: any) {
       setBookResult({ error: err.message || 'Unknown error' });
-    } finally {
       setLoading(false);
     }
   };
 
   // Step content
   let content: React.ReactNode = null;
-  if (loading && !bookResult) {
-    // Show story if available, and book is still being generated
+  if ((loading || polling) && !bookResult) {
     content = (
       <Stack spacing={3} alignItems="center">
         <CircularProgress />
@@ -202,7 +237,7 @@ const BookFormWizard: React.FC = () => {
             )}
           </>
         )}
-        <Button onClick={() => { setStoryResult(null); setBookResult(null); setStep(0); setForm(initialForm); }} sx={{ color: 'text.primary' }}>Create Another Book</Button>
+        <Button onClick={() => { setStoryResult(null); setBookResult(null); setStep(0); setForm(initialForm); setSessionId(null); setPolling(false); }} sx={{ color: 'text.primary' }}>Create Another Book</Button>
       </Stack>
     );
   } else if (step === 0) {

@@ -47,14 +47,24 @@ class UserInputAgent(Agent):
                 else params.get(key, random.choice(self.DEFAULTS[key]))
             )
         processed["voice"] = "female"
-        processed["length"] = "short"  # Hardcoded
-        # Handle custom elements and setting
+        processed["length"] = "short"
         custom_elements = params.get("custom_elements")
-        processed["custom_elements"] = custom_elements if custom_elements else None
-        if custom_elements:
+        user_setting = params.get("setting")
+        if user_setting:
+            # User selected a setting from the dropdown; it takes priority
+            processed["setting"] = user_setting
+            if custom_elements:
+                import re
+                # Remove setting-related phrases from custom_elements
+                custom_elements_cleaned = re.sub(r"\b(in|at|on) the [A-Za-z ]+", "", custom_elements, flags=re.IGNORECASE)
+                processed["custom_elements"] = custom_elements_cleaned.strip() or None
+            else:
+                processed["custom_elements"] = None
+        elif custom_elements:
+            processed["custom_elements"] = custom_elements if custom_elements else None
             # Try to detect a setting in the custom elements (simple heuristic: look for 'in the' or 'at the' or 'on the')
             import re
-            setting_match = re.search(r"\\b(in|at|on) the ([A-Za-z ]+)", custom_elements, re.IGNORECASE)
+            setting_match = re.search(r"\b(in|at|on) the ([A-Za-z ]+)", custom_elements, re.IGNORECASE)
             if setting_match:
                 processed["setting"] = setting_match.group(0)[3:].strip()  # e.g., 'the jungle'
             else:
@@ -181,7 +191,7 @@ class StoryGeneratorAgent(Agent):
                             story += part["text"]
             if not story:
                 raise RuntimeError("Gemini returned empty result")
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e: 
             print("Gemini API call failed:", e)
             # Minimal mock fallback
             story = (
@@ -494,7 +504,7 @@ class IllustrationGeneratorAgent(Agent):
             "Authorization": f"Bearer {creds.token}",
             "Content-Type": "application/json; charset=utf-8",
         }
-        max_images = len(prompts)  # You can set this to a lower number if needed
+        max_images = len(prompts) 
         for i, prompt in enumerate(prompts[:max_images]):
             logging.info(f"[IllustrationGeneratorAgent] Prompt {i}: {prompt}")
             data = {
@@ -539,7 +549,7 @@ class IllustrationGeneratorAgent(Agent):
                         time.sleep(10)
                     else:
                         images.append(f"mock_image_{i}.png")
-            time.sleep(10)  # Add a 10-second delay between requests
+            time.sleep(10) 
         logging.info(f"[IllustrationGeneratorAgent] Output images: {images}")
         if artifact is not None:
             artifact["illustrations"] = images
@@ -569,7 +579,7 @@ class BookAssemblerAgent(Agent):
             from reportlab.lib.pagesizes import letter, landscape
             from reportlab.pdfgen import canvas
             from reportlab.lib.utils import ImageReader
-        except ImportError as exc:  # pragma: no cover
+        except ImportError as exc:
             raise RuntimeError("Install reportlab to enable PDF output") from exc
 
         temp_dir = tempfile.gettempdir()
@@ -586,8 +596,8 @@ class BookAssemblerAgent(Agent):
 
         for i, (scene, img_path) in enumerate(zip(scenes, illustrations)):
             c.setFont("Helvetica-Bold", 16)
-            # Move story text up
-            text_top_y = height - 60  # Higher up
+        
+            text_top_y = height - 60 
             left_margin = 72
             right_margin = 72
             max_text_width = width - left_margin - right_margin
@@ -608,10 +618,10 @@ class BookAssemblerAgent(Agent):
             text_y = text_top_y
             for line in lines:
                 c.drawString(left_margin, text_y, line)
-                text_y -= 16  # Move down for next line
+                text_y -= 16  
             # Calculate available space for image
-            image_top = text_y - 10  # 10pt gap below text
-            image_bottom = 40  # Leave space for page number at bottom
+            image_top = text_y - 10  
+            image_bottom = 40  
             image_height = image_top - image_bottom
             image_left = left_margin
             image_right = width - right_margin
@@ -689,7 +699,6 @@ class BookCreationWorkflow(SequentialAgent):
         )
         logging.info("[BookCreationWorkflow] After IllustrationGeneratorAgent")
         scenes = memory["scenes"] if "scenes" in memory else [story]
-        # Only assemble book if evaluation passes
         character = elements.get("character") if isinstance(elements, dict) else processed.get("character_name", "A Friend")
         setting = elements.get("setting") if isinstance(elements, dict) else processed.get("setting", "A Magical Place")
         title = f"{character} in {setting}"
