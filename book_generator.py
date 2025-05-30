@@ -147,7 +147,7 @@ class StoryGeneratorAgent(Agent):
         story: str | None = None
         try:
             project = os.environ["GOOGLE_CLOUD_PROJECT"]
-            location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us‑central1")
+            location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
             model = (
                 f"projects/{project}/locations/{location}/publishers/google/"
                 f"models/gemini-2.0-flash-001"
@@ -549,7 +549,6 @@ class IllustrationGeneratorAgent(Agent):
                         time.sleep(10)
                     else:
                         images.append(f"mock_image_{i}.png")
-            time.sleep(10) 
         logging.info(f"[IllustrationGeneratorAgent] Output images: {images}")
         if artifact is not None:
             artifact["illustrations"] = images
