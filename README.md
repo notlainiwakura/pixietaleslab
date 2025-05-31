@@ -46,7 +46,7 @@ PixieTales Lab demonstrates the power of multi-agent orchestration using ADK. Us
 
 ---
 
-## Updated Book Generation Flow (Async)
+## Async Generation Flow
 
 - When you request a book, the backend now starts the book generation as a **background job** and immediately returns a `session_id` and a `pending` status.
 - The frontend (or API client) should **poll** the endpoint `/api/book-status?session_id=...` to check the status of the book generation.
